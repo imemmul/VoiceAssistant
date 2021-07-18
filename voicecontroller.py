@@ -9,7 +9,12 @@ from gtts import gTTS
 import playsound
 import pyttsx3
 import pyautogui
-from yeelight import discover_bulbs, Bulb
+import randomfilmgenerator
+import webbrowser
+from threading import Thread
+from yeelight import Bulb
+from discordbot import MyBot
+
 
 greetings = {"hi" : "Hi",
             "welcome" : "Welcome again Emir",
@@ -60,10 +65,10 @@ myBulb1 = myBulb()
 def callback(recognizer, audio):                          # this is called from the background thread
     try:
         print("You said " + recognizer.recognize_google(audio))  # received audio data, now need to recognize it
-        if "jarvis" in (recognizer.recognize_google(audio)).lower():
+        if "barnabas" in (recognizer.recognize_google(audio)).lower():
             speak(greetings["hi"] + " , "+ reply_by_time() + answers["helping"])
             execute_commands()
-    except sr.UnknownValueError:
+    except (sr.UnknownValueError, sr.RequestError):
         pass
 
 def speak(text):
@@ -85,7 +90,7 @@ def get_audio():
         try:
             said = r.recognize_google(audio)
             print(said)
-        except sr.UnknownValueError as e:
+        except (sr.UnknownValueError, sr.RequestError) as e:
             pass
     if isinstance(said, str):
         command = said
@@ -108,7 +113,7 @@ def reply_by_time(): # this function provides that program answers different dia
     return answer_time
 
 def execute_commands():  # below commands are basically nested if else statements to get wanted behavior from program.
-    t = 5
+    t = 7
     while t > 0:
         print("---IN COMMAND LOOP---")
         command = get_audio().lower()
@@ -136,17 +141,16 @@ def execute_commands():  # below commands are basically nested if else statement
                     command_account = get_audio().lower()
                     if "login" in command_account or "account" in command_account:
                         speak("Okay, " + answers["account"])
-                        pyautogui.write("emirulurak")
+                        pyautogui.write("eredeli908")
                         pyautogui.press('tab')
-                        pyautogui.write("EndfireValorant123")
+                        pyautogui.write("bahadır123")
                         pyautogui.press('enter')
                         speak("Done, " + answers["else"])
                         break
                     z -= 1
                 t += 1
-            elif "quit" in command or "exit" in command:
+            elif "quit" in command or "exit" in command or "goodbye" in command:
                 speak(goodbye["goodbye"])
-                t = 0
                 break
             elif "how are you" in command or "it is going" in command:
                 speak(answers["answer_going"])
@@ -170,10 +174,29 @@ def execute_commands():  # below commands are basically nested if else statement
                     if isinstance(item, to_do):
                         speak("Okay Emir, I am reading your to do list   ")
                         speak(f"{index + 1}" + "," + item.to_do)
+            elif ("event" in command or "event list" in command) and "read" in command:
+                for index, item in enumerate(event_list):
+                    if isinstance(item, myevent):
+                        speak("Okay Emir, I am reading your to do list   ")
+                        speak(f"{index + 1}" + "," + item.myevent)
+            elif ("movie" in command or "film" in command) and "find" in command:
+                speech = randomfilmgenerator.main()
+                print("I am inside")
+                speak(speech[0])
+                speak("Do you want to open page ?")
+                while True:
+                    command_movie = get_audio().lower()
+                    if "yes" in command_movie or "okay" in command_movie:
+                        speak("Okay, I am opening the movie's page")
+                        webbrowser.open(speech[1])
+                        break
+                    else:
+                        speak("Okay")
+                        break
             else:
                 speak(goodbye["not_understand"])
         t -= 1
-        time.sleep(1)
+        time.sleep(0.1)
     speak(goodbye["goodbye"])
 
 def add_to_do():
@@ -202,19 +225,19 @@ def add_event():
             print(len(event_list))
             break
 
-def listen_in_back():
+def main(): # here i want to implement a thread in order to build stopping that background listening when i give "shut down" command
+    r = sr.Recognizer()
+    m = sr.Microphone()
+    with m as source:
+        r.adjust_for_ambient_noise(source, duration=0.2)
+    print("--- BACKGROUND LISTENING HAS BEEN STARTED.")
+    stop_listening = r.listen_in_background(m, callback=callback)
+    import discordbot
     while True:
-        get_audio()
-def main():
-    pass
+        time.sleep(0.1)
+
+
 
 if __name__ == "__main__":
     main()
 # here i couldnt implement this code block inside of a function so i did belowings
-r = sr.Recognizer()
-m = sr.Microphone()
-with m as source:
-    r.adjust_for_ambient_noise(source, duration=0.2)
-stop_listening = r.listen_in_background(m, callback=callback)
-while True:
-    time.sleep(0.1)
