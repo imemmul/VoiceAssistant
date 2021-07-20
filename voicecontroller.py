@@ -1,5 +1,4 @@
-from tkinter.constants import S
-from types import coroutine
+from ntpath import join
 from pyttsx3 import engine
 import speech_recognition as sr
 import os
@@ -11,10 +10,14 @@ import pyttsx3
 import pyautogui
 import randomfilmgenerator
 import webbrowser
+import asyncio
 from threading import Thread
 from yeelight import Bulb
-from discordbot import MyBot
+from discordbot import My_Discord_Bot
 
+TOKEN = "ODY2MTcyNDY2ODUzMTgzNDg4.YPOr-A.EjpQDPhmn0lkds4rwpaT4bZYSCM"
+GUILD = "Dungeonesis"
+ID = "317630542407270401"
 
 greetings = {"hi" : "Hi",
             "welcome" : "Welcome again Emir",
@@ -47,6 +50,8 @@ class to_do():
 to_do_list = []
 event_list = []
 
+md = My_Discord_Bot()
+
 class myBulb():
     def __init__(self):
         self.bulb = Bulb("192.168.1.2")
@@ -65,7 +70,7 @@ myBulb1 = myBulb()
 def callback(recognizer, audio):                          # this is called from the background thread
     try:
         print("You said " + recognizer.recognize_google(audio))  # received audio data, now need to recognize it
-        if "barnabas" in (recognizer.recognize_google(audio)).lower():
+        if "jarvis" in (recognizer.recognize_google(audio)).lower():
             speak(greetings["hi"] + " , "+ reply_by_time() + answers["helping"])
             execute_commands()
     except (sr.UnknownValueError, sr.RequestError):
@@ -117,6 +122,7 @@ def execute_commands():  # below commands are basically nested if else statement
     while t > 0:
         print("---IN COMMAND LOOP---")
         command = get_audio().lower()
+        run_the_dc(command=command)
         if len(command) > 2:
             print(f"You said as a command {command}")
             if "morning" in command:
@@ -199,6 +205,7 @@ def execute_commands():  # below commands are basically nested if else statement
         time.sleep(0.1)
     speak(goodbye["goodbye"])
 
+
 def add_to_do():
     while True:
         command = get_audio().lower()
@@ -225,14 +232,33 @@ def add_event():
             print(len(event_list))
             break
 
+def run_the_dc(command):
+    if "discord" in command:
+        thread_discord = Thread(target=listen_dc_commands)
+        thread_command_loop = Thread(target=execute_commands)
+        thread_discord.start()
+        thread_command_loop.start()
+        md.run(TOKEN)
+
+def listen_dc_commands():
+    while True:
+        command_discord = get_audio().lower()
+        print("--- LISTEN DISCORD COMMAND ---")
+        try:
+            if "join" in command_discord:
+                asyncio.run(md.join_channel())
+            elif  "leave" in command_discord:
+                asyncio.run(md.exit_channel())
+        except Exception as e:
+            speak("Cannot leave or join to discord channel")
+
 def main(): # here i want to implement a thread in order to build stopping that background listening when i give "shut down" command
     r = sr.Recognizer()
     m = sr.Microphone()
     with m as source:
         r.adjust_for_ambient_noise(source, duration=0.2)
-    print("--- BACKGROUND LISTENING HAS BEEN STARTED.")
+    print("--- BACKGROUND LISTENING HAS BEEN STARTED ---")
     stop_listening = r.listen_in_background(m, callback=callback)
-    import discordbot
     while True:
         time.sleep(0.1)
 

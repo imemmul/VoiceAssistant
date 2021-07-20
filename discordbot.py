@@ -1,45 +1,43 @@
+from ntpath import join
 import os
+from types import coroutine
 import discord
 from discord.ext import commands
-
-## TOKEN = ODY2MTcyNDY2ODUzMTgzNDg4.YPOr-A.EjpQDPhmn0lkds4rwpaT4bZYSCM
+from discord.ext.commands.core import command
+import asyncio
+import time
+from threading import Thread
 
 TOKEN = "ODY2MTcyNDY2ODUzMTgzNDg4.YPOr-A.EjpQDPhmn0lkds4rwpaT4bZYSCM"
 GUILD = "Dungeonesis"
 ID = "317630542407270401"
 
-client = commands.Bot(command_prefix = "!")
-# i am not going to run client cause i want to run in voicecontroller.py
-
-@client.event
-async def on_ready():
-    print("Logged on as {} to {} as guild!".format(client.user, client.guilds[0]))
-    channel = client.get_channel(id=483622519304355850)
-    #await channel.send("I am back.")
-@client.event
-async def on_message(message):
-    await client.process_commands(message)
-    text_channels = ["bot"]
-    if str(message.channel) in text_channels:
-        if message.content.find("!wakeup") != -1:
-            await message.channel.send("I am alive.")
-@client.command(pass_context = True)
-async def esva(ctx):
-    if (ctx.author.voice):
-        channel = ctx.author.voice.channel
+class My_Discord_Bot():
+    def __init__(self):
+        self.client = commands.Bot(command_prefix = "!")
+        self.on_ready = self.client.event(self.on_ready)
+        self.on_message = self.client.event(self.on_message)
+    def run(self, TOKEN):
+        self.client.run(TOKEN)
+    async def on_ready(self):
+        print("Logged on as {} to {} as guild!".format(self.client.user, self.client.guilds[0]))
+        channel = self.client.get_channel(id=483622519304355850)
+        #await channel.send("I am back.")
+    async def on_message(self, message):
+        await self.client.process_commands(message)
+        text_channels = ["bot"]
+        if str(message.channel) in text_channels:
+            if message.content.find("!wakeup") != -1:
+                await message.channel.send("I am alive.")
+    async def join_channel(self):
+        print("I AM INSIDE OF THE JOIN")
+        channel = self.client.get_channel(id=484044934924599306)
         await channel.connect()
-    else:
-        await ctx.send("You are not in a voice channel.")
-@client.command(pass_context = True)
-async def exit(ctx):
-    if ctx.voice_client:
-        await ctx.voice_client.disconnect()
-    else:
-        await ctx.send("I am not in a voice channel.")
-def get_TOKEN():
-    return TOKEN
+    async def exit_channel(self):
+        channel = self.client.get_channel(id=484044934924599306)
+        await channel.disconnect()
 
-def get_GUILD():
-    return GUILD
 
-client.run(TOKEN)
+
+
+
