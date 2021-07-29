@@ -1,3 +1,4 @@
+from asyncio.tasks import sleep
 from ntpath import join
 from pyttsx3 import engine
 import speech_recognition as sr
@@ -11,13 +12,16 @@ import pyautogui
 import randomfilmgenerator
 import webbrowser
 import asyncio
-from threading import Thread
+import threading
 from yeelight import Bulb
 from discordbot import My_Discord_Bot
 
 TOKEN = "ODY2MTcyNDY2ODUzMTgzNDg4.YPOr-A.EjpQDPhmn0lkds4rwpaT4bZYSCM"
 GUILD = "Dungeonesis"
 ID = "317630542407270401"
+
+is_awake = False
+is_dc_joined = False
 
 greetings = {"hi" : "Hi",
             "welcome" : "Welcome again Emir",
@@ -54,7 +58,7 @@ md = My_Discord_Bot()
 
 class myBulb():
     def __init__(self):
-        self.bulb = Bulb("192.168.1.2")
+        self.bulb = Bulb("192.168.1.7")
     def turn_on(self):
         self.bulb.turn_on()
     def turn_off(self):
@@ -72,7 +76,10 @@ def callback(recognizer, audio):                          # this is called from 
         print("You said " + recognizer.recognize_google(audio))  # received audio data, now need to recognize it
         if "jarvis" in (recognizer.recognize_google(audio)).lower():
             speak(greetings["hi"] + " , "+ reply_by_time() + answers["helping"])
-            execute_commands()
+            global is_awake
+            is_awake = True
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(execute_commands(loop))
     except (sr.UnknownValueError, sr.RequestError):
         pass
 
@@ -117,12 +124,12 @@ def reply_by_time(): # this function provides that program answers different dia
             answer_time = greetings["goodnight"]
     return answer_time
 
-def execute_commands():  # below commands are basically nested if else statements to get wanted behavior from program.
+async def execute_commands(loop):  # below commands are basically nested if else statements to get wanted behavior from program.
     t = 7
-    while t > 0:
-        print("---IN COMMAND LOOP---")
+    global is_awake
+    while t > 0 and is_awake:
         command = get_audio().lower()
-        run_the_dc(command=command)
+        print("---IN COMMAND LOOP---")
         if len(command) > 2:
             print(f"You said as a command {command}")
             if "morning" in command:
@@ -137,26 +144,31 @@ def execute_commands():  # below commands are basically nested if else statement
             elif "afternoon" in command:
                 speak(greetings["goodafternoon"])
                 t += 1
+            elif "join" in command:
+                speak("OKAY, I AM JOINING TO DISCORD CHANNEL")
+                loop = asyncio.get_event_loop()                             #this line of code will get the event loop
+                loop.create_task(execute_dc_commands(command=command))      #and i am adding dc command execution to loop.
+                await asyncio.sleep(0.1)
+                speak("DO YOU NEED ANYTHING ELSE")
             elif "lol" in command or "league of legends" in command:
                 speak(answers["lol"])
                 os.startfile("E:\Riot Games\League of Legends\LeagueClient.exe")
-                time.sleep(3)
+                await asyncio.sleep(3)
                 speak("Done, " + answers["else"])
                 z = 5
                 while z > 0:
                     command_account = get_audio().lower()
                     if "login" in command_account or "account" in command_account:
                         speak("Okay, " + answers["account"])
-                        pyautogui.write("eredeli908")
+                        pyautogui.write("emirulurak")
                         pyautogui.press('tab')
-                        pyautogui.write("bahadır123")
+                        pyautogui.write("EndfireValorant123")
                         pyautogui.press('enter')
                         speak("Done, " + answers["else"])
                         break
                     z -= 1
                 t += 1
             elif "quit" in command or "exit" in command or "goodbye" in command:
-                speak(goodbye["goodbye"])
                 break
             elif "how are you" in command or "it is going" in command:
                 speak(answers["answer_going"])
@@ -189,20 +201,20 @@ def execute_commands():  # below commands are basically nested if else statement
                 speech = randomfilmgenerator.main()
                 print("I am inside")
                 speak(speech[0])
-                speak("Do you want to open page ?")
+                speak("Do you want to open movie's page ?")
                 while True:
                     command_movie = get_audio().lower()
                     if "yes" in command_movie or "okay" in command_movie:
                         speak("Okay, I am opening the movie's page")
                         webbrowser.open(speech[1])
+                        speak("DO YOU NEED ANYTHING ELSE ?")
                         break
                     else:
-                        speak("Okay")
+                        speak("OKAY, DO YOU NEED ANYTHING ELSE ?")
                         break
             else:
                 speak(goodbye["not_understand"])
         t -= 1
-        time.sleep(0.1)
     speak(goodbye["goodbye"])
 
 
@@ -233,24 +245,28 @@ def add_event():
             break
 
 def run_the_dc(command):
+    is_bot_running = False
     if "discord" in command:
-        thread_discord = Thread(target=listen_dc_commands)
-        thread_command_loop = Thread(target=execute_commands)
-        thread_discord.start()
-        thread_command_loop.start()
+        is_bot_running = True
         md.run(TOKEN)
+    return is_bot_running
 
-def listen_dc_commands():
-    while True:
-        command_discord = get_audio().lower()
-        print("--- LISTEN DISCORD COMMAND ---")
-        try:
-            if "join" in command_discord:
-                asyncio.run(md.join_channel())
-            elif  "leave" in command_discord:
-                asyncio.run(md.exit_channel())
-        except Exception as e:
-            speak("Cannot leave or join to discord channel")
+async def execute_dc_commands(command):
+    global is_dc_joined
+    command_discord = command
+    try:
+        print("--- EXECUTING DISCORD COMMAND ---")
+        if "join" in command_discord and not is_dc_joined:
+            is_dc_joined = True
+            await md.join_channel()
+            await asyncio.sleep(0)
+        elif is_dc_joined and "play" in command_discord and "favor" in command_discord:
+            pass
+        else:
+            speak("IT LOOKS LIKE, I AM ALREADY IN THE VOICE CHANNEL")
+    except Exception as e:
+        print(e)
+        speak("Cannot leave or join to discord channel")
 
 def main(): # here i want to implement a thread in order to build stopping that background listening when i give "shut down" command
     r = sr.Recognizer()
@@ -259,6 +275,7 @@ def main(): # here i want to implement a thread in order to build stopping that 
         r.adjust_for_ambient_noise(source, duration=0.2)
     print("--- BACKGROUND LISTENING HAS BEEN STARTED ---")
     stop_listening = r.listen_in_background(m, callback=callback)
+    run_the_dc("discord")
     while True:
         time.sleep(0.1)
 
@@ -266,4 +283,4 @@ def main(): # here i want to implement a thread in order to build stopping that 
 
 if __name__ == "__main__":
     main()
-# here i couldnt implement this code block inside of a function so i did belowings
+# herei couldnt implement this code block inside of a function so i did belowings 
