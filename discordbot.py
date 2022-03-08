@@ -8,7 +8,7 @@ import asyncio
 import time
 from threading import Thread
 
-TOKEN = "ODY2MTcyNDY2ODUzMTgzNDg4.YPOr-A.EjpQDPhmn0lkds4rwpaT4bZYSCM"
+TOKEN = "TOKEN"
 GUILD = "Dungeonesis"
 ID = "317630542407270401"
 
