@@ -9,8 +9,8 @@ import time
 from threading import Thread
 
 TOKEN = "TOKEN"
-GUILD = "Dungeonesis"
-ID = "317630542407270401"
+GUILD = "GUILD"
+ID = "ID"
 
 class My_Discord_Bot():
     def __init__(self):
