@@ -16,9 +16,9 @@ import threading
 from yeelight import Bulb
 from discordbot import My_Discord_Bot
 
-TOKEN = "ODY2MTcyNDY2ODUzMTgzNDg4.YPOr-A.EjpQDPhmn0lkds4rwpaT4bZYSCM"
+TOKEN = "TOKEN"
 GUILD = "Dungeonesis"
-ID = "317630542407270401"
+ID = "GUILD"
 
 is_awake = False
 is_dc_joined = False
